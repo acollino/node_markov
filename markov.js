@@ -15,7 +15,21 @@ class MarkovMachine {
    *  {"the": ["cat", "hat"], "cat": ["in"], "in": ["the"], "hat": [null]} */
 
   makeChains() {
-    // TODO
+    this.chains = {};
+    this.words.forEach((word, index) => {
+      let key = removePunctuation(word.toLowerCase());
+      let nextWord = this.words[index + 1];
+      if (nextWord) {
+        nextWord = removePunctuation(nextWord.toLowerCase());
+      } else {
+        nextWord = null;
+      }
+      if (!this.chains[key]) {
+        this.chains[key] = [nextWord];
+      } else {
+        this.chains[key].push(nextWord);
+      }
+    });
   }
 
   /** return random text from chains */
@@ -23,6 +37,13 @@ class MarkovMachine {
   makeText(numWords = 100) {
     // TODO
   }
+}
+
+function removePunctuation(str) {
+  let punct =
+    "[\\!\"#\\$%&\\'\\(\\)\\*\\+,-\\.\\/:;<=>\\?@\\[\\]\\^_`{\\|}~\\\\]+";
+  let regex = new RegExp(`(?<=(\\s|^))${punct}|${punct}(?=(\\s|$))`, "g");
+  return str.replace(regex, "");
 }
 
 module.exports = { MarkovMachine };
