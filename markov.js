@@ -13,7 +13,6 @@ class MarkovMachine {
    *
    *  for text of "the cat in the hat", chains will be
    *  {"the": ["cat", "hat"], "cat": ["in"], "in": ["the"], "hat": [null]} */
-
   makeChains() {
     this.chains = {};
     this.words.forEach((word, index) => {
@@ -33,9 +32,17 @@ class MarkovMachine {
   }
 
   /** return random text from chains */
-
   makeText(numWords = 100) {
-    // TODO
+    let finalText = [];
+    while (finalText.length < numWords) {
+      let chainArray = [];
+      let wordsLeft = numWords - finalText.length;
+      traverseChain(this.chains, chainArray, wordsLeft);
+      chainArray[0] =
+        chainArray[0].charAt(0).toUpperCase() + chainArray[0].slice(1);
+      finalText = finalText.concat(chainArray);
+    }
+    return finalText.join(" ");
   }
 }
 
@@ -44,6 +51,24 @@ function removePunctuation(str) {
     "[\\!\"#\\$%&\\'\\(\\)\\*\\+,-\\.\\/:;<=>\\?@\\[\\]\\^_`{\\|}~\\\\]+";
   let regex = new RegExp(`(?<=(\\s|^))${punct}|${punct}(?=(\\s|$))`, "g");
   return str.replace(regex, "");
+}
+
+function traverseChain(chainObj, targetArray, maxLength) {
+  if (targetArray.length === 0) {
+    let chainStarts = Object.keys(chainObj);
+    let wordIndex = Math.floor(Math.random() * chainStarts.length);
+    targetArray.push(chainStarts[wordIndex]);
+    traverseChain(chainObj, targetArray, maxLength);
+  } else {
+    let nextChain = chainObj[targetArray[targetArray.length - 1]];
+    if (nextChain[0] !== null && targetArray.length < maxLength) {
+      let nextWordIndex = Math.floor(Math.random() * nextChain.length);
+      targetArray.push(nextChain[nextWordIndex]);
+      traverseChain(chainObj, targetArray, maxLength);
+    } else {
+      targetArray[targetArray.length - 1] += ".";
+    }
+  }
 }
 
 module.exports = { MarkovMachine };
