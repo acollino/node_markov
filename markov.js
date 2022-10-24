@@ -5,8 +5,59 @@ class MarkovMachine {
 
   constructor(text) {
     let words = text.split(/[ \r\n]+/);
-    this.words = words.filter((c) => c !== "");
+    this.storeWords(words);
     this.makeChains();
+  }
+
+  storeWords(wordArray) {
+    let filtered = wordArray.filter((c) => c !== "");
+    this.words = filtered.map((word, index) => {
+      let currentWord;
+      if (index === 0) {
+        currentWord = new MarkovWord(removeExcessPunctuation(word), true);
+      } else {
+        currentWord = new MarkovWord(removeExcessPunctuation(word));
+      }
+      if (index === wordArray.length - 1 && !currentWord.isEnd) {
+        currentWord.isEnd = true;
+      }
+      return currentWord;
+    });
+  }
+
+  parseInputString(inputStr) {
+    let splitWords = inputStr.split(/[ \r\n]+/);
+    this.words = [];
+    // let sentenceStartRegex = /(?<=^|[\\!\\.\\?]\s)\S+/g;
+    let sentenceEndRegex = /\S+(?=[\\!\\.\\?]\s|[\\!\\.\\?]$)/g;
+    let indices = { split: 0, text: 0 };
+    while (indices.text < inputStr.length) {
+      // let start = sentenceStartRegex.exec(text);
+      let end = sentenceEndRegex.exec(inputStr);
+      if (end === null) {
+        end = {
+          index: inputStr.length - splitWords[splitWords.length - 1].length,
+        };
+      }
+      // Condition for 1-word inputs, so both start + end
+      if (end.index === indices.text) {
+        this.addMarkovWord(splitWords, indices, { start: true, end: true });
+      } else {
+        this.addMarkovWord(splitWords, indices, { start: true, end: false });
+        while (indices.text !== end.index) {
+          this.addMarkovWord(splitWords, indices, { start: false, end: false });
+        }
+        this.addMarkovWord(splitWords, indices, { start: false, end: true });
+      }
+    }
+  }
+
+  addMarkovWord(wordArray, indexObject, positionObject) {
+    let word = removeExcessPunctuation(wordArray[indexObject.split]);
+    let markWord = new MarkovWord(word, positionObject);
+    this.words.push(markWord);
+    indexObject.split++;
+    indexObject.text += word.length + 1;
   }
 
   /** set markov chains:
@@ -15,11 +66,11 @@ class MarkovMachine {
    *  {"the": ["cat", "hat"], "cat": ["in"], "in": ["the"], "hat": [null]} */
   makeChains() {
     this.chains = {};
-    this.words.forEach((word, index) => {
-      let key = removePunctuation(word.toLowerCase());
+    this.words.forEach((markWord, index) => {
+      let key = markWord.word;
       let nextWord = this.words[index + 1];
       if (nextWord) {
-        nextWord = removePunctuation(nextWord.toLowerCase());
+        nextWord = nextWord.word;
       } else {
         nextWord = null;
       }
@@ -46,9 +97,27 @@ class MarkovMachine {
   }
 }
 
+class MarkovWord {
+  constructor(word, positionDetails = {}) {
+    this.word = word;
+    this.start = Boolean(positionDetails.start);
+    this.end = Boolean(positionDetails.end);
+  }
+
+  isEnd() {
+    return this.word.match(/[\\!\\.\\?]$/);
+  }
+}
+
 function removePunctuation(str) {
   let punct =
     "[\\!\"#\\$%&\\'\\(\\)\\*\\+,-\\.\\/:;<=>\\?@\\[\\]\\^_`{\\|}~\\\\]+";
+  let regex = new RegExp(`(?<=(\\s|^))${punct}|${punct}(?=(\\s|$))`, "g");
+  return str.replace(regex, "");
+}
+
+function removeExcessPunctuation(str) {
+  let punct = '[\\"#\\$%&\\(\\)\\*\\+\\-\\/<=>@\\[\\]\\^_`{\\|}~\\\\]+';
   let regex = new RegExp(`(?<=(\\s|^))${punct}|${punct}(?=(\\s|$))`, "g");
   return str.replace(regex, "");
 }
@@ -71,4 +140,4 @@ function traverseChain(chainObj, targetArray, maxLength) {
   }
 }
 
-module.exports = { MarkovMachine };
+module.exports = { MarkovMachine, removeExcessPunctuation };
