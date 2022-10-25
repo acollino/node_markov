@@ -3,8 +3,8 @@
 class MarkovMachine {
   /** build markov machine; read in text.*/
 
-  constructor(text) {
-    this.storeWords(text);
+  constructor(text = "") {
+    this.storeWords(String(text));
     this.makeChains();
     this.filterStartingKeys();
   }
@@ -44,6 +44,7 @@ class MarkovMachine {
         this.setEndingDistance(chainWordKeys);
         chainWordKeys.clear();
       }
+      currentChain.start = currentChain.start || newSentence;
       newSentence = currentChain.end;
     });
   }
@@ -79,11 +80,9 @@ class MarkovMachine {
       let wordsLeft = numWords - finalText.length;
       let intialLength = finalText.length;
       this.traverseChain(chainArray, wordsLeft);
-      chainArray[0] =
-        chainArray[0].charAt(0).toUpperCase() + chainArray[0].slice(1);
       finalText = finalText.concat(chainArray);
       if (intialLength === finalText.length) {
-        // infinite loops if nothing can be added from the chains
+        // stop infinite loops if nothing can be added from the chains
         break;
       }
     }
@@ -96,12 +95,15 @@ class MarkovMachine {
    */
   traverseChain(targetArray, maxLength) {
     if (targetArray.length === 0) {
+      // The starting options must finish a sentence in the remaining length
       let startOptions = this.startingWords.filter((key) => {
         return this.chains[key].endingDistance < maxLength - targetArray.length;
       });
-      let wordIndex = Math.floor(Math.random() * startOptions.length);
-      targetArray.push(startOptions[wordIndex]);
-      this.traverseChain(targetArray, maxLength);
+      if (startOptions.length > 0) {
+        let wordIndex = Math.floor(Math.random() * startOptions.length);
+        targetArray.push(startOptions[wordIndex]);
+        this.traverseChain(targetArray, maxLength);
+      }
     } else {
       let nextChain = this.chains[
         targetArray[targetArray.length - 1]
